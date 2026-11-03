@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Earth Engine credentials
+.credentials/
+config/
+
+# VS Code
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data
+outputs/
+downloads/
+*.tif
+*.tiff
+
+# OS
+.DS_Store
+Thumbs.db
