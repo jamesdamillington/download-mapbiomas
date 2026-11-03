@@ -1,3 +1,5 @@
+#mosaicks tiles downloaded by download-years.py into a single raster for each year
+
 from pathlib import Path
 
 import rasterio

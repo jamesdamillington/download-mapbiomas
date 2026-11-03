@@ -1,3 +1,6 @@
+#creates a list of rectangular Earth Engine tiles covering the atlantic forest biome
+#saves the tile metadata to a JSON file for use by download-years.py
+
 from pathlib import Path
 import ee
 import json
