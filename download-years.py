@@ -1,3 +1,6 @@
+#downloads MapBiomas Collection 11 land cover classification rasters 
+#for tiles created by create-tiles.py
+
 from pathlib import Path
 import ee
 import requests
@@ -12,7 +15,8 @@ PROJECT_ID = "ee-jamesmillington-01"
 OUTDIR = Path("~/projects/mapbiomas/verena/outputs").expanduser()
 OUTDIR.mkdir(exist_ok=True)
 
-YEAR = 2024
+years = list(range(1985, 2026))
+years.remove(2024) #2024 already created during testing of the script
 
 # ---------------------------------------------------------
 # Initialize Earth Engine
@@ -21,7 +25,8 @@ YEAR = 2024
 ee.Initialize(project=PROJECT_ID)
 
 # ---------------------------------------------------------
-# Read tile metadata from JSON file
+# Read tile metadata from JSON file (created by the script "create-tiles.py")
+# ---------------------------------------------------------
 infile = OUTDIR / "AF-tiles.json"
 with open(infile) as f:
     tile_metadata = json.load(f)
@@ -69,50 +74,61 @@ geom = (
 )
     
 # ---------------------------------------------------------
-# Select year
+# Loop over years
 # ---------------------------------------------------------
 
-image = (
-    mb.select(f"classification_{YEAR}")
-      .clip(geom)
+for year in years:
+    print(f"Processing year {year}...")
+
+    image = (
+        mb.select(f"classification_{year}")
+          .clip(geom)
       .toByte()
-)
-
-# ---------------------------------------------------------
-# Generate download URL
-# ----------------------------------------------
-
-for tile in tiles:
-
-    print(f"Processing tile {tile['id']}...")
-    print(f"Tile bounds: {tile['xmin']}, {tile['ymin']}, {tile['xmax']}, {tile['ymax']}")
-    
-    print("Generating download URL...")
-    url = image.getDownloadURL(
-        {
-            "region": tile["geometry"],
-            "scale": 30,
-            "format": "GEO_TIFF"
-    }
     )
-    
-    print(f"Download URL: {url}")
 
 
     # ---------------------------------------------------------
-    # Download file
-    # ---------------------------------------------------------
+    # Generate download URL
+    # ----------------------------------------------
 
-    print("Downloading file...")
-    
-    outfile = OUTDIR / f"{YEAR}" / f"mapbiomas_c11_{YEAR}_tile{tile['id']:03d}.tif"
+    for tile in tiles: 
 
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
+        print(f"Processing tile {tile['id']}...")
+        print(f"Tile bounds: {tile['xmin']}, {tile['ymin']}, {tile['xmax']}, {tile['ymax']}")
+        
+        print("Generating download URL...")
+        url = image.getDownloadURL(
+            {
+                "region": tile["geometry"],
+                "scale": 30,
+                "format": "GEO_TIFF"
+        }
+        )
+        
+        print(f"Download URL: {url}")
 
-    with open(outfile, "wb") as f:
-        for chunk in response.iter_content(chunk_size=1024 * 1024):
-            if chunk:
-                f.write(chunk)
 
-    print(f"Saved to {outfile}")
+        # ---------------------------------------------------------
+        # Download file
+        # ---------------------------------------------------------
+
+        print("Downloading file...")
+        
+        YEARDIR = OUTDIR / str(year)
+        
+        YEARDIR.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+        
+        outfile = YEARDIR / f"mapbiomas_c11_{year}_tile{tile['id']:03d}.tif"
+
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+
+        with open(outfile, "wb") as f:
+            for chunk in response.iter_content(chunk_size=1024 * 1024):
+                if chunk:
+                    f.write(chunk)
+
+        print(f"Saved to {outfile}")
