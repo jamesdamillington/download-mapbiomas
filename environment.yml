@@ -1,0 +1,13 @@
+name: gee
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - earthengine-api
+  - requests
+  - geopandas
+  - rasterio
+  - gdal
+  - google-cloud-sdk
+prefix: /home/james/miniconda3/envs/gee
