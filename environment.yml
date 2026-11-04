@@ -10,4 +10,4 @@ dependencies:
   - rasterio
   - gdal
   - google-cloud-sdk
-prefix: /home/james/miniconda3/envs/gee
+
