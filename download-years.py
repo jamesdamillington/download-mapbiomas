@@ -22,9 +22,11 @@ years = list(range(1985, 2026))
 # Retry configuration for handling transient server errors
 # ---------------------------------------------------------
 
-MAX_RETRIES = 5
+MAX_RETRIES = 4
 INITIAL_WAIT = 2  # seconds
 MAX_WAIT = 32     # seconds
+REQUEST_TIMEOUT = (30, 300)  # (connect, read) seconds; read is long as Earth Engine builds the file before sending
+MAX_READ_TIMEOUT = 1200      # seconds; cap for the read timeout, which doubles after each ReadTimeout
 
 # ---------------------------------------------------------
 # Initialize Earth Engine
@@ -76,11 +78,12 @@ def download_with_retry(url_generator, outfile, max_retries=MAX_RETRIES, initial
     Returns True if successful, False if all retries exhausted.
     """
     wait_time = initial_wait
+    connect_timeout, read_timeout = REQUEST_TIMEOUT
     
     for attempt in range(1, max_retries + 1):
         try:
             url = url_generator()
-            response = requests.get(url, stream=True, timeout=30)
+            response = requests.get(url, stream=True, timeout=(connect_timeout, read_timeout))
             response.raise_for_status()
             
             # Write to a temporary file so interrupted downloads aren't mistaken for complete ones
@@ -109,6 +112,19 @@ def download_with_retry(url_generator, outfile, max_retries=MAX_RETRIES, initial
                 print(f"  Failed with HTTP {status_code}: {e}")
                 return False
                 
+        except requests.exceptions.ReadTimeout:
+            # Earth Engine was still building the file: retry with a longer read timeout
+            if attempt < max_retries:
+                read_timeout = min(read_timeout * 2, MAX_READ_TIMEOUT)
+                print(f"  Attempt {attempt}/{max_retries} timed out. "
+                      f"Retrying in {wait_time}s with read timeout {read_timeout}s...")
+                time.sleep(wait_time)
+                wait_time = min(wait_time * 2, MAX_WAIT)
+                continue
+            else:
+                print("  Failed: read timed out")
+                return False
+
         except requests.exceptions.RequestException as e:
             # Network-level errors (timeouts, connection resets) are retried too
             if attempt < max_retries:
