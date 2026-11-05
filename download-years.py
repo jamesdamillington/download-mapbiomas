@@ -23,7 +23,7 @@ years = list(range(1989, 2026))
 # Retry configuration for handling transient server errors
 # ---------------------------------------------------------
 
-MAX_RETRIES = 3
+MAX_RETRIES = 5
 INITIAL_WAIT = 2  # seconds
 MAX_WAIT = 32     # seconds
 
@@ -162,7 +162,7 @@ for year in years:
     for tile in tiles: 
 
         print(f"Processing year {year}...")
-        print(f"Processing tile {tile['id']}...")
+        print(f"Processing tile {tile['id']:03d}...")
         print(f"Tile bounds: {tile['xmin']}, {tile['ymin']}, {tile['xmax']}, {tile['ymax']}")
         
         print("Generating download URL...")
@@ -184,8 +184,6 @@ for year in years:
         # Download file
         # ---------------------------------------------------------
 
-        print("Downloading file...")
-        
         YEARDIR = OUTDIR / str(year)
         
         YEARDIR.mkdir(
@@ -195,7 +193,13 @@ for year in years:
         
         outfile = YEARDIR / f"mapbiomas_c11_{year}_tile{tile['id']:03d}.tif"
 
+        if outfile.exists():
+            print(f"Tile {tile['id']:03d} already downloaded, skipping: {outfile}")
+            continue
+
+        print("Downloading file...")
+
         if download_with_retry(get_url, outfile):
             print(f"Saved to {outfile}")
         else:
-            print(f"ERROR: Could not download tile {tile['id']} for year {year} after {MAX_RETRIES} attempts. Skipping...")
+            print(f"ERROR: Could not download tile {tile['id']:03d} for year {year} after {MAX_RETRIES} attempts. Skipping...")
