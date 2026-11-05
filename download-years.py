@@ -12,11 +12,11 @@ import json
 
 PROJECT_ID = "ee-jamesmillington-01"
 
-OUTDIR = Path("~/projects/mapbiomas/verena/outputs").expanduser()
+OUTDIR = Path("outputs").expanduser()
 OUTDIR.mkdir(exist_ok=True)
 
-years = list(range(1985, 2026))
-years.remove(2024) #2024 already created during testing of the script
+years = list(range(1989, 2026))
+#years.remove(2024) #2024 already created during testing of the script
 
 # ---------------------------------------------------------
 # Initialize Earth Engine
@@ -78,7 +78,6 @@ geom = (
 # ---------------------------------------------------------
 
 for year in years:
-    print(f"Processing year {year}...")
 
     image = (
         mb.select(f"classification_{year}")
@@ -93,6 +92,7 @@ for year in years:
 
     for tile in tiles: 
 
+        print(f"Processing year {year}...")
         print(f"Processing tile {tile['id']}...")
         print(f"Tile bounds: {tile['xmin']}, {tile['ymin']}, {tile['xmax']}, {tile['ymax']}")
         
