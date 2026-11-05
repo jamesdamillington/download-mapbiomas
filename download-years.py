@@ -44,6 +44,7 @@ tiles = []
 
 for tile in tile_metadata:
 
+    # Convert each tile's bounding box into an Earth Engine geometry
     tile["geometry"] = ee.Geometry.Rectangle(
         [
             tile["xmin"],
@@ -83,6 +84,7 @@ def download_with_retry(url_generator, outfile, max_retries=MAX_RETRIES, initial
             response = requests.get(url, stream=True, timeout=30)
             response.raise_for_status()
             
+            # Write to a temporary file so interrupted downloads aren't mistaken for complete ones
             tmpfile = Path(f"{outfile}.part")
             with open(tmpfile, "wb") as f:
                 for chunk in response.iter_content(chunk_size=1024 * 1024):
@@ -90,10 +92,12 @@ def download_with_retry(url_generator, outfile, max_retries=MAX_RETRIES, initial
                         f.write(chunk)
             tmpfile.replace(outfile)
             
+            print(f"  Download successful (attempt {attempt}/{max_retries})")
             return True
             
         except requests.exceptions.HTTPError as e:
             status_code = e.response.status_code
+            # Only server-side/rate-limit errors are worth retrying
             is_transient = status_code in (429, 500, 502, 503, 504)
             
             if is_transient and attempt < max_retries:
@@ -107,6 +111,7 @@ def download_with_retry(url_generator, outfile, max_retries=MAX_RETRIES, initial
                 return False
                 
         except requests.exceptions.RequestException as e:
+            # Network-level errors (timeouts, connection resets) are retried too
             if attempt < max_retries:
                 print(f"  Attempt {attempt}/{max_retries} failed with {type(e).__name__}. "
                       f"Retrying in {wait_time}s...")
@@ -150,6 +155,7 @@ geom = (
 
 for year in years:
 
+    # Select the year's band, clip to the biome and cast to byte to reduce file size
     image = (
         mb.select(f"classification_{year}")
           .clip(geom)
@@ -158,8 +164,8 @@ for year in years:
 
 
     # ---------------------------------------------------------
-    # Generate download URL
-    # ----------------------------------------------
+    # Loop over tiles
+    # ---------------------------------------------------------
 
     for tile in tiles[0:5]: 
 
@@ -176,6 +182,7 @@ for year in years:
         
         outfile = YEARDIR / f"mapbiomas_c11_{year}_tile{tile['id']:03d}.tif"
 
+        # Skip tiles already downloaded (checked before any Earth Engine request)
         if outfile.exists():
             print(f"Tile {tile['id']:03d} already downloaded, skipping: {outfile}")
             continue
