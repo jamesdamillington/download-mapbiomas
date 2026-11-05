@@ -16,7 +16,7 @@ PROJECT_ID = "ee-jamesmillington-01"
 OUTDIR = Path("outputs").expanduser()
 OUTDIR.mkdir(exist_ok=True)
 
-years = list(range(1989, 2026))
+years = list(range(2023, 2026))
 #years.remove(2024) #2024 already created during testing of the script
 
 # ---------------------------------------------------------
@@ -83,10 +83,12 @@ def download_with_retry(url_generator, outfile, max_retries=MAX_RETRIES, initial
             response = requests.get(url, stream=True, timeout=30)
             response.raise_for_status()
             
-            with open(outfile, "wb") as f:
+            tmpfile = Path(f"{outfile}.part")
+            with open(tmpfile, "wb") as f:
                 for chunk in response.iter_content(chunk_size=1024 * 1024):
                     if chunk:
                         f.write(chunk)
+            tmpfile.replace(outfile)
             
             return True
             
@@ -159,31 +161,12 @@ for year in years:
     # Generate download URL
     # ----------------------------------------------
 
-    for tile in tiles: 
+    for tile in tiles[0:5]: 
 
         print(f"Processing year {year}...")
         print(f"Processing tile {tile['id']:03d}...")
         print(f"Tile bounds: {tile['xmin']}, {tile['ymin']}, {tile['xmax']}, {tile['ymax']}")
         
-        print("Generating download URL...")
-        
-        def get_url():
-            return image.getDownloadURL(
-                {
-                    "region": tile["geometry"],
-                    "scale": 30,
-                    "format": "GEO_TIFF"
-            }
-            )
-        
-        url = get_url()
-        print(f"Download URL: {url}")
-
-
-        # ---------------------------------------------------------
-        # Download file
-        # ---------------------------------------------------------
-
         YEARDIR = OUTDIR / str(year)
         
         YEARDIR.mkdir(
@@ -196,6 +179,20 @@ for year in years:
         if outfile.exists():
             print(f"Tile {tile['id']:03d} already downloaded, skipping: {outfile}")
             continue
+
+        # URL is generated inside download_with_retry, once per attempt
+        def get_url():
+            return image.getDownloadURL(
+                {
+                    "region": tile["geometry"],
+                    "scale": 30,
+                    "format": "GEO_TIFF"
+                }
+            )
+
+        # ---------------------------------------------------------
+        # Download file
+        # ---------------------------------------------------------
 
         print("Downloading file...")
 
