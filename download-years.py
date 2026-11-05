@@ -16,8 +16,7 @@ PROJECT_ID = "ee-jamesmillington-01"
 OUTDIR = Path("outputs").expanduser()
 OUTDIR.mkdir(exist_ok=True)
 
-years = list(range(2023, 2026))
-#years.remove(2024) #2024 already created during testing of the script
+years = list(range(1985, 2026))
 
 # ---------------------------------------------------------
 # Retry configuration for handling transient server errors
@@ -167,7 +166,7 @@ for year in years:
     # Loop over tiles
     # ---------------------------------------------------------
 
-    for tile in tiles[0:5]: 
+    for tile in tiles: 
 
         print(f"Processing year {year}...")
         print(f"Processing tile {tile['id']:03d}...")
